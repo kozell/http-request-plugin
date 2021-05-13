@@ -24,6 +24,7 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509ExtendedTrustManager;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
@@ -51,7 +52,6 @@ import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
 import com.google.common.collect.Range;
-import com.google.common.io.ByteStreams;
 
 import hudson.AbortException;
 import hudson.CloseProofOutputStream;
@@ -420,6 +420,18 @@ public class HttpRequestExecution extends MasterToSlaveCallable<ResponseContentS
 			logger().println("Response: \n" + response.getContent());
 		}
 
+		// save file
+		if (outputFile != null) {
+			logger().println("Saving response body to " + outputFile);
+
+			try (InputStream in = response.getContentStream();
+					OutputStream out = outputFile.write()) {
+				if (in != null) {
+					IOUtils.copyLarge(in, out);
+				}
+			}
+		}
+
 		//validate status code
 		responseCodeIsValid(response);
 
@@ -428,27 +440,6 @@ public class HttpRequestExecution extends MasterToSlaveCallable<ResponseContentS
 			if (!response.getContent().contains(validResponseContent)) {
 				throw new AbortException("Fail: Response doesn't contain expected content '" + validResponseContent + "'");
 			}
-		}
-
-		//save file
-		if (outputFile == null) {
-			return;
-		}
-		logger().println("Saving response body to " + outputFile);
-
-		InputStream in = response.getContentStream();
-		if (in == null) {
-			return;
-		}
-		OutputStream out = null;
-		try {
-			out = outputFile.write();
-			ByteStreams.copy(in, out);
-		} finally {
-			if (out != null) {
-				out.close();
-			}
-			in.close();
 		}
 	}
 
