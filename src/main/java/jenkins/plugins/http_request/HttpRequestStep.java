@@ -49,6 +49,7 @@ public final class HttpRequestStep extends Step {
     private MimeType acceptType               = DescriptorImpl.acceptType;
     private MimeType contentType              = DescriptorImpl.contentType;
     private Integer timeout                   = DescriptorImpl.timeout;
+    private Integer retries                   = DescriptorImpl.retries;
     private Boolean consoleLogResponseBody    = DescriptorImpl.consoleLogResponseBody;
     private Boolean quiet                     = DescriptorImpl.quiet;
     private String authentication             = DescriptorImpl.authentication;
@@ -143,6 +144,15 @@ public final class HttpRequestStep extends Step {
 
     public Integer getTimeout() {
         return timeout;
+    }
+
+    @DataBoundSetter
+    public void setRetries(Integer retries) {
+        this.retries = retries;
+    }
+
+    public Integer getRetries() {
+        return retries;
     }
 
     @DataBoundSetter
@@ -303,7 +313,7 @@ public final class HttpRequestStep extends Step {
 
 	@Extension
     public static final class DescriptorImpl extends StepDescriptor {
-        public static final boolean ignoreSslErrors = HttpRequest.DescriptorImpl.ignoreSslErrors;
+        public static final boolean ignoreSslErrors            = HttpRequest.DescriptorImpl.ignoreSslErrors;
         public static final HttpMode httpMode                  = HttpRequest.DescriptorImpl.httpMode;
         public static final String   httpProxy                 = HttpRequest.DescriptorImpl.httpProxy;
         public static final String   proxyAuthentication       = HttpRequest.DescriptorImpl.proxyAuthentication;
@@ -312,6 +322,7 @@ public final class HttpRequestStep extends Step {
         public static final MimeType acceptType                = HttpRequest.DescriptorImpl.acceptType;
         public static final MimeType contentType               = HttpRequest.DescriptorImpl.contentType;
         public static final int      timeout                   = HttpRequest.DescriptorImpl.timeout;
+        public static final int      retries                   = HttpRequest.DescriptorImpl.retries;
         public static final Boolean  consoleLogResponseBody    = HttpRequest.DescriptorImpl.consoleLogResponseBody;
         public static final Boolean  quiet                     = HttpRequest.DescriptorImpl.quiet;
         public static final String   authentication            = HttpRequest.DescriptorImpl.authentication;

@@ -61,6 +61,9 @@
             <f:entry field="timeout" title="Connection timeout" help="/plugin/http_request/help-timeout.html">
                 <f:number default="${descriptor.timeout}"/>
             </f:entry>
+	        <f:entry field="retries" title="Automatic retries" help="/plugin/http_request/help-retries.html">
+	            <f:number default="${descriptor.retries}"/>
+	        </f:entry>
             <f:entry field="validResponseCodes" title="Response codes expected" help="/plugin/http_request/help-validResponseCodes.html">
                 <f:textbox default="${descriptor.validResponseCodes}"/>
             </f:entry>

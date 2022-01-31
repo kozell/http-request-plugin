@@ -32,6 +32,9 @@
         <f:entry field="timeout" title="Connection timeout" help="/plugin/http_request/help-timeout.html">
             <f:number default="${descriptor.timeout}"/>
         </f:entry>
+        <f:entry field="retries" title="Automatic retries" help="/plugin/http_request/help-retries.html">
+            <f:number default="${descriptor.retries}"/>
+        </f:entry>
         <f:entry field="outputFile" title="Output response to file" help="/plugin/http_request/help-outputFile.html">
              <f:textbox />
         </f:entry>

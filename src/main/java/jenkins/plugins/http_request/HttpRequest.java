@@ -64,6 +64,7 @@ public class HttpRequest extends Builder {
     private MimeType contentType              = DescriptorImpl.contentType;
     private String outputFile                 = DescriptorImpl.outputFile;
     private Integer timeout                   = DescriptorImpl.timeout;
+    private Integer retries                   = DescriptorImpl.retries;
     private Boolean consoleLogResponseBody    = DescriptorImpl.consoleLogResponseBody;
     private Boolean quiet                     = DescriptorImpl.quiet;
     private String authentication             = DescriptorImpl.authentication;
@@ -176,6 +177,15 @@ public class HttpRequest extends Builder {
 	public void setTimeout(Integer timeout) {
 		this.timeout = timeout;
 	}
+
+    public Integer getRetries() {
+        return retries;
+    }
+
+    @DataBoundSetter
+    public void setRetries(Integer retries) {
+        this.retries = retries;
+    }
 
 	public Boolean getConsoleLogResponseBody() {
 		return consoleLogResponseBody;
@@ -311,7 +321,7 @@ public class HttpRequest extends Builder {
 		return this;
 	}
 
-	private List<HttpRequestNameValuePair> createParams(EnvVars envVars, AbstractBuild<?, ?> build, TaskListener listener) {
+	private static List<HttpRequestNameValuePair> createParams(EnvVars envVars, AbstractBuild<?, ?> build, TaskListener listener) {
 		Map<String, String> buildVariables = build.getBuildVariables();
 		if (buildVariables.isEmpty()) {
 			return Collections.emptyList();
@@ -461,7 +471,7 @@ public class HttpRequest extends Builder {
 
 	@Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
-		public static final boolean ignoreSslErrors = false;
+		public static final boolean ignoreSslErrors            = false;
 		public static final HttpMode httpMode                  = HttpMode.GET;
 		public static final String   httpProxy                 = "";
 		public static final String proxyAuthentication         = "";
@@ -472,6 +482,7 @@ public class HttpRequest extends Builder {
         public static final MimeType contentType               = MimeType.NOT_SET;
         public static final String   outputFile                = "";
         public static final int      timeout                   = 0;
+        public static final int      retries                   = 3;
         public static final Boolean  consoleLogResponseBody    = false;
         public static final Boolean  quiet                     = false;
         public static final String   authentication            = "";
@@ -588,7 +599,7 @@ public class HttpRequest extends Builder {
             return validRanges;
         }
 
-        public FormValidation doCheckValidResponseCodes(@QueryParameter String value) {
+        public static FormValidation doCheckValidResponseCodes(@QueryParameter String value) {
             return checkValidResponseCodes(value);
         }
 

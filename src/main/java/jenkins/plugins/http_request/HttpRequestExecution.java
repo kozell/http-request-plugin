@@ -13,7 +13,6 @@ import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
-import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
 import java.util.List;
@@ -41,6 +40,7 @@ import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.entity.mime.content.FileBody;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HttpContext;
@@ -101,6 +101,7 @@ public class HttpRequestExecution extends MasterToSlaveCallable<ResponseContentS
 	private final String validResponseContent;
 	private final FilePath outputFile;
 	private final int timeout;
+	private final int retries;
 	private final boolean consoleLogResponseBody;
 	private final ResponseHandle responseHandle;
 
@@ -126,7 +127,7 @@ public class HttpRequestExecution extends MasterToSlaveCallable<ResponseContentS
 			return new HttpRequestExecution(
 					url, http.getHttpMode(), http.getIgnoreSslErrors(),
 					http.getHttpProxy(), http.getProxyAuthentication(),
-					body, headers, http.getTimeout(),
+					body, headers, http.getTimeout(), http.getRetries(),
 					uploadFile, http.getMultipartName(), http.getWrapAsMultipart(),
 					http.getAuthentication(), http.isUseNtlm(), http.getUseSystemProperties(),
 					formData,
@@ -157,7 +158,7 @@ public class HttpRequestExecution extends MasterToSlaveCallable<ResponseContentS
 		return new HttpRequestExecution(
 				step.getUrl(), step.getHttpMode(), step.isIgnoreSslErrors(),
 				step.getHttpProxy(), step.getProxyAuthentication(),
-				step.getRequestBody(), headers, step.getTimeout(),
+				step.getRequestBody(), headers, step.getTimeout(), step.getRetries(),
 				uploadFile, step.getMultipartName(), step.isWrapAsMultipart(),
 				step.getAuthentication(), step.isUseNtlm(), step.getUseSystemProperties(),
 				formData,
@@ -171,7 +172,7 @@ public class HttpRequestExecution extends MasterToSlaveCallable<ResponseContentS
 	private HttpRequestExecution(
 			String url, HttpMode httpMode, boolean ignoreSslErrors,
 			String httpProxy, String proxyAuthentication, String body,
-			List<HttpRequestNameValuePair> headers, Integer timeout,
+			List<HttpRequestNameValuePair> headers, Integer timeout, Integer retries,
 			FilePath uploadFile, String multipartName, boolean wrapAsMultipart,
 			String authentication, boolean useNtlm, boolean useSystemProperties,
 			List<HttpRequestFormDataPart> formData,
@@ -217,6 +218,7 @@ public class HttpRequestExecution extends MasterToSlaveCallable<ResponseContentS
 		this.headers = headers;
 		this.formData = formData;
 		this.timeout = timeout != null ? timeout : -1;
+		this.retries = retries != null ? retries : 3;
 		this.useNtlm = useNtlm;
 		if (authentication != null && !authentication.isEmpty()) {
 			Authenticator auth = HttpRequestGlobalConfig.get().getAuthentication(authentication);
@@ -281,7 +283,7 @@ public class HttpRequestExecution extends MasterToSlaveCallable<ResponseContentS
 		try {
 			return authAndRequest();
 		} catch (IOException | InterruptedException |
-				KeyStoreException | NoSuchAlgorithmException | KeyManagementException e) {
+				NoSuchAlgorithmException | KeyManagementException e) {
 			throw new IllegalStateException(e);
 		}
 	}
@@ -298,7 +300,7 @@ public class HttpRequestExecution extends MasterToSlaveCallable<ResponseContentS
 	}
 
 	private ResponseContentSupplier authAndRequest()
-			throws IOException, InterruptedException, KeyStoreException, NoSuchAlgorithmException, KeyManagementException {
+			throws IOException, InterruptedException, NoSuchAlgorithmException, KeyManagementException {
 		//only leave open if no error happen
 		ResponseHandle responseHandle = ResponseHandle.NONE;
 		CloseableHttpClient httpclient = null;
@@ -314,10 +316,9 @@ public class HttpRequestExecution extends MasterToSlaveCallable<ResponseContentS
 				clientBuilder.setProxy(this.httpProxy);
 			}
 
-			HttpClientUtil clientUtil = new HttpClientUtil();
 			// Create the simple body, this is the most frequent operation. It will be overridden
 			// later, if a more complex payload descriptor is set.
-			HttpRequestBase httpRequestBase = clientUtil.createRequestBase(new RequestAction(new URL(url), httpMode, body, null, headers));
+			HttpRequestBase httpRequestBase = HttpClientUtil.createRequestBase(new RequestAction(new URL(url), httpMode, body, null, headers));
 
 			if (formData != null && !formData.isEmpty() && httpMode == HttpMode.POST) {
 				// multipart/form-data builder mode
@@ -374,7 +375,7 @@ public class HttpRequestExecution extends MasterToSlaveCallable<ResponseContentS
 			HttpContext context = new BasicHttpContext();
 			httpclient = auth(clientBuilder, httpRequestBase, context);
 
-			ResponseContentSupplier response = executeRequest(httpclient, clientUtil, httpRequestBase, context);
+			ResponseContentSupplier response = executeRequest(httpclient, httpRequestBase, context);
 			processResponse(response);
 
 			responseHandle = this.responseHandle;
@@ -401,6 +402,14 @@ public class HttpRequestExecution extends MasterToSlaveCallable<ResponseContentS
 					.setConnectionRequestTimeout(t)
 					.build();
 			clientBuilder.setDefaultRequestConfig(config);
+		}
+		//retries
+		if (retries > 0) {
+		    logger().println("Setting autoretry to: " + retries);
+			clientBuilder.setRetryHandler(new DefaultHttpRequestRetryHandler(retries, false));
+		} else {
+		    logger().println("Autoretry turned off.");
+			clientBuilder.disableAutomaticRetries();
 		}
 		//Ignore SSL errors
 		if (ignoreSslErrors) {
@@ -434,11 +443,11 @@ public class HttpRequestExecution extends MasterToSlaveCallable<ResponseContentS
 	}
 
 	private ResponseContentSupplier executeRequest(
-			CloseableHttpClient httpclient, HttpClientUtil clientUtil, HttpRequestBase httpRequestBase,
+			CloseableHttpClient httpclient, HttpRequestBase httpRequestBase,
 			HttpContext context) throws IOException {
 		ResponseContentSupplier responseContentSupplier;
 		try {
-			final HttpResponse response = clientUtil.execute(httpclient, context, httpRequestBase, logger());
+			final HttpResponse response = HttpClientUtil.execute(httpclient, context, httpRequestBase, logger());
 			// The HttpEntity is consumed by the ResponseContentSupplier
 			responseContentSupplier = new ResponseContentSupplier(responseHandle, response);
 		} catch (UnknownHostException uhe) {
@@ -485,19 +494,11 @@ public class HttpRequestExecution extends MasterToSlaveCallable<ResponseContentS
 		}
 		logger().println("Saving response body to " + outputFile);
 
-		InputStream in = response.getContentStream();
-		if (in == null) {
-			return;
-		}
-		OutputStream out = null;
-		try {
-			out = outputFile.write();
-			IOUtils.copy(in, out);
-		} finally {
-			if (out != null) {
-				out.close();
+		try (InputStream in = response.getContentStream(); OutputStream out = outputFile.write()) {
+			if (in == null) {
+				return;
 			}
-			in.close();
+			IOUtils.copy(in, out);
 		}
 	}
 

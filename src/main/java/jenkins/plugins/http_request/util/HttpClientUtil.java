@@ -32,7 +32,11 @@ import jenkins.plugins.http_request.HttpMode;
  */
 public class HttpClientUtil {
 
-    public HttpRequestBase createRequestBase(RequestAction requestAction) throws IOException {
+	private HttpClientUtil() {
+		// Don't
+	}
+
+    public static HttpRequestBase createRequestBase(RequestAction requestAction) throws IOException {
         HttpRequestBase httpRequestBase = doCreateRequestBase(requestAction);
         for (HttpRequestNameValuePair header : requestAction.getHeaders()) {
             httpRequestBase.addHeader(header.getName(), header.getValue());
@@ -41,7 +45,7 @@ public class HttpClientUtil {
         return httpRequestBase;
     }
 
-    private HttpRequestBase doCreateRequestBase(RequestAction requestAction) throws IOException {
+    private static HttpRequestBase doCreateRequestBase(RequestAction requestAction) throws IOException {
         //without entity
     	if (requestAction.getMode() == HttpMode.HEAD) {
 			return new HttpHead(getUrlWithParams(requestAction));
@@ -70,7 +74,7 @@ public class HttpClientUtil {
         return http;
     }
 
-	private HttpEntity makeEntity(RequestAction requestAction) throws
+	private static HttpEntity makeEntity(RequestAction requestAction) throws
 			UnsupportedEncodingException {
 		if (requestAction.getRequestBody() != null && !requestAction.getRequestBody().isEmpty()) {
 			ContentType contentType = null;
@@ -86,7 +90,7 @@ public class HttpClientUtil {
 		return toUrlEncoded(requestAction.getParams());
 	}
 
-	private String getUrlWithParams(RequestAction requestAction) throws IOException {
+	private static String getUrlWithParams(RequestAction requestAction) throws IOException {
 		String url = requestAction.getUrl().toString();
 
 		if (!requestAction.getParams().isEmpty()) {
@@ -112,7 +116,7 @@ public class HttpClientUtil {
 		}
 	}
 
-    public HttpResponse execute(HttpClient client, HttpContext context, HttpRequestBase method,
+    public static HttpResponse execute(HttpClient client, HttpContext context, HttpRequestBase method,
 								PrintStream logger) throws IOException {
         logger.println("Sending request to url: " + method.getURI());
 
