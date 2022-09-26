@@ -74,6 +74,7 @@ public class HttpRequest extends Builder {
     private Boolean useSystemProperties       = DescriptorImpl.useSystemProperties;
     private boolean useNtlm                   = DescriptorImpl.useNtlm;
     private List<HttpRequestNameValuePair> customHeaders = DescriptorImpl.customHeaders;
+	private List<HttpRequestNameValuePair> parameters = DescriptorImpl.parameters;
     private List<HttpRequestFormDataPart> formData = DescriptorImpl.formData;
 
 	@DataBoundConstructor
@@ -240,6 +241,15 @@ public class HttpRequest extends Builder {
 		this.customHeaders = customHeaders;
 	}
 
+	public List<HttpRequestNameValuePair> getParameters() {
+		return parameters;
+	}
+
+	@DataBoundSetter
+	public void setParameters(List<HttpRequestNameValuePair> parameters) {
+		this.parameters = parameters;
+	}
+
 	public List<HttpRequestFormDataPart> getFormData() {
 		return formData;
 	}
@@ -287,6 +297,9 @@ public class HttpRequest extends Builder {
 		if (customHeaders == null) {
 			customHeaders = DescriptorImpl.customHeaders;
 		}
+		if (parameters == null) {
+			parameters = DescriptorImpl.parameters;
+		}
 		if (formData == null) {
 			formData = DescriptorImpl.formData;
 		}
@@ -304,7 +317,6 @@ public class HttpRequest extends Builder {
 			// old jobs use it (for compatibility), new jobs doesn't (jelly was not reading the default)
 			useSystemProperties = !DescriptorImpl.useSystemProperties;
 		}
-
 		if(wrapAsMultipart == null) {
 			wrapAsMultipart = DescriptorImpl.wrapAsMultipart;
 		}
@@ -482,6 +494,7 @@ public class HttpRequest extends Builder {
         public static final Boolean  useSystemProperties       = false;
         public static final boolean  useNtlm                   = false;
         public static final List<HttpRequestNameValuePair> customHeaders = Collections.emptyList();
+		public static final List<HttpRequestNameValuePair> parameters = Collections.emptyList();
         public static final List<HttpRequestFormDataPart> formData = Collections.emptyList();
 
         public DescriptorImpl() {

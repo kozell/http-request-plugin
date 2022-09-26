@@ -55,7 +55,7 @@ public class HttpRequestBackwardCompatibilityTest {
 		RequestAction ra = ras.iterator().next();
 		assertEquals("http://localhost1",ra.getUrl().toString());
         assertEquals("GET",ra.getMode().toString());
-        List<HttpRequestNameValuePair> nvps = ra.getParams();
+        List<HttpRequestNameValuePair> nvps = ra.getParameters();
         assertEquals(1,nvps.size());
 
 		HttpRequestNameValuePair nvp = nvps.iterator().next();

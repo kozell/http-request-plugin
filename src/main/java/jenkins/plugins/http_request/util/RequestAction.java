@@ -31,15 +31,15 @@ public class RequestAction extends AbstractDescribableImpl<RequestAction> implem
     private final List<HttpRequestNameValuePair> headers;
 
     @DataBoundConstructor
-    public RequestAction(URL url, HttpMode mode, String requestBody, List<HttpRequestNameValuePair> params) {
-        this(url, mode, requestBody, params, null);
+    public RequestAction(URL url, HttpMode mode, String requestBody, List<HttpRequestNameValuePair> parameters) {
+        this(url, mode, requestBody, parameters, null);
     }
 
-    public RequestAction(URL url, HttpMode mode, String requestBody, List<HttpRequestNameValuePair> params, List<HttpRequestNameValuePair> headers) {
+    public RequestAction(URL url, HttpMode mode, String requestBody, List<HttpRequestNameValuePair> parameters, List<HttpRequestNameValuePair> headers) {
         this.url = url;
         this.mode = mode;
         this.requestBody = requestBody;
-        this.params = params == null ? new ArrayList<>() : params;
+        this.params = parameters == null ? new ArrayList<>() : parameters;
         this.headers = headers  == null ? new ArrayList<>() : headers;
     }
 
@@ -51,7 +51,7 @@ public class RequestAction extends AbstractDescribableImpl<RequestAction> implem
         return mode;
     }
 
-    public List<HttpRequestNameValuePair> getParams() {
+    public List<HttpRequestNameValuePair> getParameters() {
         return Collections.unmodifiableList(params);
     }
 

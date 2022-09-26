@@ -2,6 +2,7 @@ package jenkins.plugins.http_request.auth;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -50,13 +51,12 @@ public class FormAuthentication extends AbstractDescribableImpl<FormAuthenticati
 
 	@Override
 	public CloseableHttpClient authenticate(HttpClientBuilder clientBuilder, HttpContext context,
-								   HttpRequestBase requestBase, PrintStream logger) throws IOException {
+			HttpRequestBase requestBase, PrintStream logger) throws IOException {
 		CloseableHttpClient client = clientBuilder.build();
-		final HttpClientUtil clientUtil = new HttpClientUtil();
 		for (RequestAction requestAction : actions) {
-			final HttpRequestBase method = clientUtil.createRequestBase(requestAction);
+			final HttpRequestBase method = HttpClientUtil.createRequestBase(requestAction);
 
-			final HttpResponse execute = clientUtil.execute(client, context, method, logger);
+			final HttpResponse execute = HttpClientUtil.execute(client, context, method, logger);
 			//from 400(client error) to 599(server error)
 			if ((execute.getStatusLine().getStatusCode() >= 400
 					&& execute.getStatusLine().getStatusCode() <= 599)) {

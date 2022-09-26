@@ -59,6 +59,7 @@ public final class HttpRequestStep extends Step {
     private Boolean useSystemProperties       = DescriptorImpl.useSystemProperties;
     private boolean useNtlm                   = DescriptorImpl.useNtlm;
     private List<HttpRequestNameValuePair> customHeaders = DescriptorImpl.customHeaders;
+    private List <HttpRequestNameValuePair> parameters = DescriptorImpl.parameters;
 	private List<HttpRequestFormDataPart> formData = DescriptorImpl.formData;
 	private String outputFile = DescriptorImpl.outputFile;
 	private ResponseHandle responseHandle = DescriptorImpl.responseHandle;
@@ -208,6 +209,15 @@ public final class HttpRequestStep extends Step {
         return customHeaders;
     }
 
+    @DataBoundSetter
+	public void setParameters(List<HttpRequestNameValuePair> parameters) {
+		this.parameters = parameters;
+    }
+
+    public List<HttpRequestNameValuePair> getParameters() {
+        return parameters;
+    }
+
 	public List<HttpRequestFormDataPart> getFormData() {
 		return formData;
 	}
@@ -322,6 +332,7 @@ public final class HttpRequestStep extends Step {
         public static final Boolean  useSystemProperties       = HttpRequest.DescriptorImpl.useSystemProperties;
         public static final boolean  useNtlm                   = HttpRequest.DescriptorImpl.useNtlm;
         public static final List <HttpRequestNameValuePair> customHeaders = Collections.emptyList();
+        public static final List <HttpRequestNameValuePair> parameters = Collections.emptyList();
         public static final List <HttpRequestFormDataPart> formData = Collections.emptyList();
         public static final String outputFile = "";
 		public static final ResponseHandle responseHandle = ResponseHandle.STRING;

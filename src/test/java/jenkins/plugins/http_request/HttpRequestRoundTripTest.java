@@ -128,8 +128,8 @@ public class HttpRequestRoundTripTest {
                 RequestAction afterAction  = afterActions.get(jdx);
                 assertEquals(beforeAction.getUrl(), afterAction.getUrl());
                 assertEquals(beforeAction.getMode(), afterAction.getMode());
-                List<HttpRequestNameValuePair> beforeParams = beforeAction.getParams();
-                List<HttpRequestNameValuePair> afterParams  = afterAction.getParams();
+                List<HttpRequestNameValuePair> beforeParams = beforeAction.getParameters();
+                List<HttpRequestNameValuePair> afterParams  = afterAction.getParameters();
                 assertEquals(beforeParams.size(), afterParams.size());
                 for (int kdx = 0; kdx < beforeParams.size(); kdx++) {
                     HttpRequestNameValuePair beforeNvp = beforeParams.get(kdx);

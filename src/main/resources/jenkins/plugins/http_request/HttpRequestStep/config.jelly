@@ -41,6 +41,9 @@
         <f:entry field="quiet" title="Quiet all output?" help="/plugin/http_request/help-quiet.html">
             <f:booleanRadio />
         </f:entry>
+        <f:entry title="Query Parameters">
+            <f:repeatableProperty field="parameters" />
+        </f:entry>
         <f:entry field="requestBody" title="Request body" help="/plugin/http_request/help-requestBody.html">
             <f:textarea />
         </f:entry>

@@ -33,6 +33,11 @@
                 <f:repeatableProperty field="customHeaders" />
             </f:entry>
         </f:section>
+        <f:section title="Query Parameters">
+            <f:entry title="Query Parameters">
+                <f:repeatableProperty field="parameters" />
+            </f:entry>
+        </f:section>
         <f:section title="Body">
             <f:entry field="passBuildParameters" title="Pass build params to URL?" help="/plugin/http_request/help-passBuildParameters.html">
                 <f:booleanRadio />

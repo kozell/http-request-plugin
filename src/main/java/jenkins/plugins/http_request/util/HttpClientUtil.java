@@ -4,13 +4,18 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
@@ -21,6 +26,8 @@ import org.apache.http.client.methods.HttpPatch;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.client.methods.HttpTrace;
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.protocol.HttpContext;
@@ -32,7 +39,12 @@ import jenkins.plugins.http_request.HttpMode;
  */
 public class HttpClientUtil {
 
-    public HttpRequestBase createRequestBase(RequestAction requestAction) throws IOException {
+	private HttpClientUtil() {
+		// Don't
+	}
+
+	public static HttpRequestBase createRequestBase(RequestAction requestAction)
+			throws IOException {
         HttpRequestBase httpRequestBase = doCreateRequestBase(requestAction);
         for (HttpRequestNameValuePair header : requestAction.getHeaders()) {
             httpRequestBase.addHeader(header.getName(), header.getValue());
@@ -41,36 +53,40 @@ public class HttpClientUtil {
         return httpRequestBase;
     }
 
-    private HttpRequestBase doCreateRequestBase(RequestAction requestAction) throws IOException {
-        //without entity
-    	if (requestAction.getMode() == HttpMode.HEAD) {
-			return new HttpHead(getUrlWithParams(requestAction));
+	private static HttpRequestBase doCreateRequestBase(RequestAction requestAction)
+			throws IOException {
+		final String uriWithParams = getUrlWithParams(requestAction);
+
+		//without entity
+		if (requestAction.getMode() == HttpMode.HEAD) {
+			return new HttpHead(uriWithParams);
 		} else if (requestAction.getMode() == HttpMode.GET && (requestAction.getRequestBody() == null || requestAction.getRequestBody().isEmpty())) {
-			return new HttpGet(getUrlWithParams(requestAction));
-        }
+			return new HttpGet(uriWithParams);
+		} else if (requestAction.getMode() == HttpMode.TRACE) {
+			return new HttpTrace(uriWithParams);
+		}
 
 		//with entity
-		final String uri = requestAction.getUrl().toString();
 		HttpEntityEnclosingRequestBase http;
 		if (requestAction.getMode() == HttpMode.GET) {
-			http = new HttpBodyGet(getUrlWithParams(requestAction));
+			http = new HttpBodyGet(uriWithParams);
 		} else if (requestAction.getMode() == HttpMode.DELETE) {
-			http = new HttpBodyDelete(uri);
+			http = new HttpBodyDelete(uriWithParams);
 		} else if (requestAction.getMode() == HttpMode.PUT) {
-			http = new HttpPut(uri);
-        } else if (requestAction.getMode() == HttpMode.PATCH) {
-			http = new HttpPatch(uri);
-        } else if (requestAction.getMode() == HttpMode.OPTIONS) {
-        	return new HttpOptions(getUrlWithParams(requestAction));
+			http = new HttpPut(uriWithParams);
+		} else if (requestAction.getMode() == HttpMode.PATCH) {
+			http = new HttpPatch(uriWithParams);
+		} else if (requestAction.getMode() == HttpMode.OPTIONS) {
+			return new HttpOptions(uriWithParams);
 		} else { //default post
-			http = new HttpPost(uri);
+			http = new HttpPost(uriWithParams);
 		}
 
 		http.setEntity(makeEntity(requestAction));
-        return http;
-    }
+		return http;
+	}
 
-	private HttpEntity makeEntity(RequestAction requestAction) throws
+	private static HttpEntity makeEntity(RequestAction requestAction) throws
 			UnsupportedEncodingException {
 		if (requestAction.getRequestBody() != null && !requestAction.getRequestBody().isEmpty()) {
 			ContentType contentType = null;
@@ -83,27 +99,22 @@ public class HttpClientUtil {
 
 			return new StringEntity(requestAction.getRequestBody(), contentType);
 		}
-		return toUrlEncoded(requestAction.getParams());
+		return toUrlEncoded(requestAction.getParameters());
 	}
 
-	private String getUrlWithParams(RequestAction requestAction) throws IOException {
-		String url = requestAction.getUrl().toString();
-
-		if (!requestAction.getParams().isEmpty()) {
-			url = appendParamsToUrl(url, requestAction.getParams());
-		}
-		return url;
-	}
-
-	private static UrlEncodedFormEntity toUrlEncoded(List<HttpRequestNameValuePair> params) throws UnsupportedEncodingException {
-		return new UrlEncodedFormEntity(params);
+	private static String getUrlWithParams(RequestAction requestAction) throws IOException {
+		return appendParamsToUrl(requestAction.getUrl().toString(), requestAction.getParameters());
 	}
 
 	public static String appendParamsToUrl(String url, List<HttpRequestNameValuePair> params) throws IOException {
-		url += url.contains("?") ? "&" : "?";
-		url += paramsToString(params);
-
-		return url;
+		try {
+			return new URIBuilder(url)
+					.addParameters(params.stream().map(p -> ((NameValuePair)p)).collect(Collectors.toList()))
+					.build()
+					.toString();
+		} catch (URISyntaxException e) {
+			throw new IOException("URI Syntax Exception encapsulated. " + e.getMessage(), e);
+		}
 	}
 
 	public static String paramsToString(List<HttpRequestNameValuePair> params) throws IOException {
@@ -112,7 +123,16 @@ public class HttpClientUtil {
 		}
 	}
 
-    public HttpResponse execute(HttpClient client, HttpContext context, HttpRequestBase method,
+	private static UrlEncodedFormEntity toUrlEncoded(List<HttpRequestNameValuePair> params)
+			throws UnsupportedEncodingException {
+		return new UrlEncodedFormEntity(params);
+	}
+	/*
+	 * public static String urlParamEncoder(List<HttpRequestNameValuePair> params) {
+	 * URLEncoder.encode(null, StandardCharsets.UTF_8); return null; }
+	 */
+
+    public static HttpResponse execute(HttpClient client, HttpContext context, HttpRequestBase method,
 								PrintStream logger) throws IOException {
         logger.println("Sending request to url: " + method.getURI());
 
